@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>Lumiere Dental — Clinic Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #0d7d72;
+            --primary-hover: #0a6259;
+            --primary-light: #e6f5f3;
+            --primary-soft: #f0faf9;
+            --ink: #14213d;
+            --text-main: #1a2333;
+            --text-muted: #6b7686;
+            --text-faint: #9aa3b2;
+            --bg: #f6f7f9;
+            --surface: #ffffff;
+            --border: #e6e9ee;
+            --border-soft: #eef0f3;
+            --danger: #e0483f;
+            --danger-light: #fdedec;
+            --success: #1a9e6f;
+            --success-light: #e7f8f1;
+            --warning: #c8871a;
+            --warning-light: #fdf3e2;
+            --shadow-sm: 0 1px 2px 0 rgb(20 33 61 / 0.05);
+            --shadow-md: 0 8px 24px -8px rgb(20 33 61 / 0.14);
+            --shadow-lg: 0 20px 40px -12px rgb(20 33 61 / 0.22);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 9px;
+            --sidebar-w: 244px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            font-size: 14.5px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4 { color: var(--ink); font-weight: 700; letter-spacing: -0.01em; }
+        h1 { font-size: 1.6rem; }
+        h2 { font-size: 1.35rem; }
+        h3 { font-size: 1.02rem; }
+        .text-muted { color: var(--text-muted); font-size: 0.86rem; }
+        .text-faint { color: var(--text-faint); font-size: 0.78rem; }
+        .eyebrow { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; font-weight: 700; color: var(--text-faint); }
+
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; }
+        .flex-col { flex-direction: column; }
+        .w-full { width: 100%; }
+
+        ::selection { background: var(--primary-light); color: var(--primary-hover); }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.05rem; border-radius: var(--radius-sm); font-weight: 600;
+            border: 1px solid transparent; cursor: pointer; transition: all 0.15s ease;
+            display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.86rem;
+            font-family: inherit; white-space: nowrap;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgb(13 125 114 / 0.25); }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+        .btn-outline { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover:not(:disabled) { background: var(--bg); border-color: #d6dae1; }
+        .btn-danger-text { background: transparent; border: 1px solid var(--border); color: var(--danger); }
+        .btn-danger-text:hover:not(:disabled) { background: var(--danger-light); border-color: #f5c9c5; }
+        .btn-ghost { background: transparent; border: none; color: var(--text-muted); }
+        .btn-ghost:hover:not(:disabled) { background: var(--bg); color: var(--text-main); }
+        .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.78rem; border-radius: 8px; }
+        .btn-icon { padding: 0.5rem; border-radius: 8px; }
+
+        /* Cards */
+        .card { background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border-soft); }
+        .card-header { margin-bottom: 1.1rem; border-bottom: 1px solid var(--border-soft); padding-bottom: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Forms */
+        .input-group { margin-bottom: 1.05rem; }
+        .input-group label { display: block; margin-bottom: 0.35rem; font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .input-group .hint { font-weight: 400; color: var(--text-faint); font-size: 0.74rem; }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%; padding: 0.62rem 0.8rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-family: inherit; font-size: 0.88rem; transition: border-color 0.15s, box-shadow 0.15s; background: var(--surface); color: var(--text-main);
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3.5px rgba(13, 125, 114, 0.12);
+        }
+        .input-group input::placeholder, .input-group textarea::placeholder { color: var(--text-faint); }
+        .input-group input[readonly] { background: var(--bg); color: var(--text-muted); }
+        .input-group input[type="file"] { padding: 0.45rem 0.6rem; font-size: 0.8rem; }
+        .search-wrap { position: relative; max-width: 320px; }
+        .search-wrap i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-faint); }
+        .search-wrap input { padding-left: 2.1rem !important; }
+
+        /* Badges */
+        .badge { padding: 0.28rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+        .badge-success { background: var(--success-light); color: #106b4b; }
+        .badge-warning { background: var(--warning-light); color: #92620d; }
+        .badge-danger { background: var(--danger-light); color: #a3312a; }
+        .badge-neutral { background: #eef0f3; color: #4a5568; }
+        .token { width: 26px; height: 26px; border-radius: 8px; background: var(--primary-light); color: var(--primary-hover); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.74rem; }
+
+        .avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--primary-light); color: var(--primary-hover); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+        .avatar-lg { width: 56px; height: 56px; border-radius: 14px; font-size: 1.15rem; }
+
+        /* Auth View */
+        #auth-view { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #f6f7f9 0%, #eef4f3 100%); padding: 1.5rem; }
+        .auth-card { width: 100%; max-width: 380px; }
+        .auth-logo { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 0.55rem; }
+        .auth-logo i { color: var(--primary); font-size: 1.6rem; }
+
+        /* App Layout */
+        #app-view { display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border-soft);
+            display: flex; flex-direction: column; padding: 1.5rem 0; z-index: 40; flex-shrink: 0;
+        }
+        .logo { padding: 0 1.5rem; font-family: 'Fraunces', serif; font-size: 1.25rem; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 0.55rem; margin-bottom: 1.75rem; }
+        .logo i { color: var(--primary); font-size: 1.35rem; }
+        .nav-items { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; padding: 0 0.75rem; }
+        .nav-item {
+            padding: 0.65rem 0.9rem; border-radius: var(--radius-sm); color: var(--text-muted); text-decoration: none;
+            display: flex; align-items: center; gap: 0.7rem; font-weight: 600; font-size: 0.88rem; transition: all 0.15s; cursor: pointer;
+        }
+        .nav-item i { font-size: 1.1rem; }
+        .nav-item:hover { background: var(--bg); color: var(--text-main); }
+        .nav-item.active { background: var(--primary-light); color: var(--primary-hover); }
+        .user-profile { padding: 1rem 1.25rem 0.25rem; margin-top: 0.75rem; border-top: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; padding-top: 1rem; }
+
+        /* Mobile top bar */
+        .mobile-bar { display: none; }
+        .sidebar-overlay { display: none; }
+
+        /* Main Content */
+        .main-content { flex: 1; overflow-y: auto; padding: 2rem 2.25rem; background: var(--bg); }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.6rem; gap: 1rem; flex-wrap: wrap; }
+        .header-actions p { margin-top: 0.15rem; }
+
+        /* Dashboard Grid */
+        .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 1.1rem; margin-bottom: 1.5rem; }
+        .stat-card { display: flex; align-items: center; gap: 0.9rem; padding: 1.25rem; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--primary-light); color: var(--primary-hover); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .stat-card h3 { font-size: 1.35rem; margin-top: 0.1rem; }
+        .stat-card .text-muted { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .dash-grid { grid-template-columns: 2fr 1fr; gap: 1.25rem; align-items: start; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 0.7rem 0.9rem; border-bottom: 1.5px solid var(--border-soft); color: var(--text-faint); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        td { padding: 0.85rem 0.9rem; border-bottom: 1px solid var(--border-soft); font-size: 0.85rem; vertical-align: middle; color: var(--text-main); }
+        tbody tr:hover { background: var(--bg); }
+        tr:last-child td { border-bottom: none; }
+        .cell-muted { color: var(--text-muted); }
+        .empty-state { text-align: center; padding: 2.75rem 1rem; color: var(--text-muted); }
+        .empty-state i { font-size: 2.1rem; color: var(--text-faint); margin-bottom: 0.6rem; display: block; }
+        .empty-state p { font-size: 0.85rem; }
+
+        /* Quick actions */
+        .qa-btn { justify-content: flex-start; padding: 0.7rem 0.85rem; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(3px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fadeIn 0.15s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal { background: var(--surface); width: 100%; max-width: 520px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); max-height: 90vh; display: flex; flex-direction: column; animation: slideUp 0.18s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; }
+        .modal-footer { padding: 1.1rem 1.5rem; border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: 0.6rem; }
+
+        /* Toast */
+        #toast-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200; display: flex; flex-direction: column; gap: 0.6rem; }
+        .toast { background: var(--ink); color: #fff; padding: 0.75rem 1.1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 0.6rem; animation: toastIn 0.2s ease; max-width: 320px; }
+        .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Patient profile */
+        .profile-header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem; }
+        .profile-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+        .profile-mini { background: var(--bg); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; }
+        .profile-mini .text-faint { text-transform: uppercase; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; }
+        .profile-mini div.val { font-weight: 600; margin-top: 0.15rem; font-size: 0.88rem; }
+        .section-label { font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: 1.1rem 0 0.5rem; }
+        .history-item { padding: 0.7rem 0; border-bottom: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .history-item:last-child { border-bottom: none; }
+
+        /* Loading */
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        .spinner-dark { border: 2px solid var(--border); border-top-color: var(--primary); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .skeleton-row td { color: transparent; }
+        .skeleton-bar { height: 12px; background: linear-gradient(90deg, #eef0f3 25%, #f6f7f9 37%, #eef0f3 63%); background-size: 400% 100%; border-radius: 4px; animation: shimmer 1.4s infinite; }
+        @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+        /* Responsive: card-table transform */
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .dash-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.open { display: block; position: fixed; inset: 0; background: rgba(15,23,42,0.4); z-index: 39; }
+            #app-view { flex-direction: column; height: 100vh; }
+            .mobile-bar {
+                display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem;
+                background: var(--surface); border-bottom: 1px solid var(--border-soft); flex-shrink: 0; z-index: 20;
+            }
+            .mobile-bar .logo { margin: 0; padding: 0; font-size: 1.1rem; }
+            .main-content { padding: 1.1rem; flex: 1; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+            .stat-card { padding: 0.9rem; }
+            .stat-card h3 { font-size: 1.1rem; }
+            h2 { font-size: 1.15rem; }
+            .header-actions { margin-bottom: 1.15rem; }
+            .card { padding: 1.1rem; border-radius: var(--radius-md); }
+            /* Convert tables into stacked cards on small screens */
+            table.responsive-table thead { display: none; }
+            table.responsive-table, table.responsive-table tbody, table.responsive-table tr, table.responsive-table td { display: block; width: 100%; }
+            table.responsive-table tr { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); margin-bottom: 0.7rem; padding: 0.4rem 0.2rem; }
+            table.responsive-table td { border-bottom: none; padding: 0.4rem 0.7rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; text-align: right; }
+            table.responsive-table td::before { content: attr(data-label); font-weight: 700; color: var(--text-faint); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; text-align: left; }
+            table.responsive-table td:empty { display: none; }
+            .profile-stat-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toasts -->
+    <div id="toast-wrap"></div>
+
+    <!-- Auth View -->
+    <div id="auth-view">
+        <div class="card auth-card">
+            <div class="auth-logo justify-center" style="margin-bottom: 1.75rem;"><i class="ph-fill ph-tooth"></i> Lumiere Dental</div>
+            <h2 style="text-align: center; margin-bottom: 0.35rem;">Welcome back</h2>
+            <p class="text-muted" style="text-align: center; margin-bottom: 1.5rem;">Enter the clinic password to continue</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" autocomplete="current-password" autofocus>
+                </div>
+                <button type="submit" id="login-btn" class="btn btn-primary w-full justify-center">Unlock Dashboard</button>
+                <p id="auth-error" class="text-muted" style="color: var(--danger); margin-top: 1rem; text-align: center; min-height: 1.2em;"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- App View -->
+    <div id="app-view" class="hidden">
+
+        <!-- Mobile top bar -->
+        <div class="mobile-bar">
+            <button class="btn btn-ghost btn-icon" onclick="toggleSidebar(true)"><i class="ph ph-list" style="font-size:1.35rem"></i></button>
+            <div class="logo"><i class="ph-fill ph-tooth"></i> Lumiere</div>
+            <button class="btn btn-ghost btn-icon" onclick="logout()"><i class="ph ph-sign-out" style="font-size:1.2rem"></i></button>
+        </div>
+
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo"><i class="ph-fill ph-tooth"></i> Lumiere</div>
+            <div class="nav-items">
+                <a class="nav-item active" data-target="dashboard"><i class="ph ph-squares-four"></i> Dashboard</a>
+                <a class="nav-item" data-target="patients"><i class="ph ph-users"></i> Patients</a>
+                <a class="nav-item" data-target="appointments"><i class="ph ph-calendar-blank"></i> Appointments</a>
+                <a class="nav-item" data-target="billing"><i class="ph ph-receipt"></i> Billing</a>
+            </div>
+            <div class="user-profile">
+                <div class="flex items-center gap-2 text-muted" style="font-size: 0.8rem;"><i class="ph ph-user-circle" style="font-size:1.2rem"></i> Admin</div>
+                <button class="btn btn-outline btn-icon" onclick="logout()" title="Sign out"><i class="ph ph-sign-out"></i></button>
+            </div>
+            <div id="offline-badge" class="hidden" style="margin: 0 1.25rem 0.25rem; padding: 0.5rem 0.7rem; background: var(--warning-light); color: #92620d; border-radius: 8px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="ph ph-wifi-slash"></i> Offline — saving locally
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Dashboard Section -->
+            <section id="view-dashboard">
+                <div class="header-actions">
+                    <div>
+                        <h2>Dashboard</h2>
+                        <p class="text-muted" id="dash-date"></p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAppointmentModal()"><i class="ph ph-plus"></i> New Appointment</button>
+                </div>
+
+                <div class="grid stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-icon"><i class="ph ph-users"></i></div>
+                        <div><div class="text-muted">Total Patients</div><h3 id="stat-patients">0</h3></div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon"><i class="ph ph-calendar-check"></i></div>
+                        <div><div class="text-muted">Today's Appointments</div><h3 id="stat-appointments">0</h3></div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="background:var(--success-light); color:var(--success)"><i class="ph ph-currency-circle-dollar"></i></div>
+                        <div><div class="text-muted">Today's Earnings</div><h3 id="stat-earnings">$0</h3></div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="background:var(--danger-light); color:var(--danger)"><i class="ph ph-warning-circle"></i></div>
+                        <div><div class="text-muted">Unpaid Balances</div><h3 id="stat-unpaid">$0</h3></div>
+                    </div>
+                </div>
+
+                <div class="grid dash-grid">
+                    <div class="card table-container">
+                        <div class="card-header"><h3><i class="ph ph-clock"></i> Today's Queue & Appointments</h3></div>
+                        <table class="responsive-table">
+                            <thead><tr><th>Token</th><th>Patient</th><th>Time</th><th>Treatment</th><th>Status</th><th></th></tr></thead>
+                            <tbody id="queue-table-body">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3><i class="ph ph-lightning"></i> Quick Actions</h3></div>
+                        <div class="flex flex-col gap-2">
+                            <button class="btn btn-outline qa-btn" onclick="openModal('modal-patient')"><i class="ph ph-user-plus"></i> Register Patient</button>
+                            <button class="btn btn-outline qa-btn" onclick="switchView('patients')"><i class="ph ph-magnifying-glass"></i> Search Records</button>
+                            <button class="btn btn-outline qa-btn" onclick="switchView('billing')"><i class="ph ph-receipt"></i> View Billing</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Patients Section -->
+            <section id="view-patients" class="hidden">
+                <div class="header-actions">
+                    <div>
+                        <h2>Patient Directory</h2>
+                        <p class="text-muted" id="patients-count">—</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openModal('modal-patient')"><i class="ph ph-plus"></i> Add Patient</button>
+                </div>
+                <div class="card table-container">
+                    <div class="search-wrap" style="margin-bottom: 1.1rem;">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" id="search-patient" placeholder="Search by name or phone…" onkeyup="searchPatients()">
+                    </div>
+                    <table class="responsive-table">
+                        <thead><tr><th>Patient</th><th>Phone</th><th>Alerts</th><th>Balance</th><th></th></tr></thead>
+                        <tbody id="patients-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Appointments Section -->
+            <section id="view-appointments" class="hidden">
+                <div class="header-actions">
+                    <h2>All Appointments</h2>
+                    <button class="btn btn-primary" onclick="openAppointmentModal()"><i class="ph ph-plus"></i> Book</button>
+                </div>
+                <div class="card table-container">
+                    <table class="responsive-table">
+                        <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Treatment</th><th>Status</th><th></th></tr></thead>
+                        <tbody id="all-appointments-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Billing & Treatments Section -->
+            <section id="view-billing" class="hidden">
+                <div class="header-actions">
+                    <div>
+                        <h2>Treatments & Billing</h2>
+                        <p class="text-muted" id="billing-summary">—</p>
+                    </div>
+                </div>
+                <div class="card table-container">
+                    <table class="responsive-table">
+                        <thead><tr><th>Date</th><th>Patient</th><th>Treatment</th><th>Fee</th><th>Paid</th><th>Status</th><th></th></tr></thead>
+                        <tbody id="billing-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Add/Edit Patient Modal -->
+    <div id="modal-patient" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header"><h3><i class="ph ph-user-plus"></i> Add New Patient</h3><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-patient')"><i class="ph ph-x"></i></button></div>
+            <div class="modal-body">
+                <form id="form-patient">
+                    <input type="hidden" id="pat-id">
+                    <div class="input-group"><label>Full Name</label><input type="text" id="pat-name" required placeholder="Jane Doe"></div>
+                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
+                        <div class="input-group"><label>Date of Birth</label><input type="date" id="pat-dob"></div>
+                        <div class="input-group"><label>Phone (WhatsApp)</label><input type="text" id="pat-phone" placeholder="+1234567890"></div>
+                    </div>
+                    <div class="input-group"><label>Medical Alerts / Allergies</label><input type="text" id="pat-alerts" placeholder="E.g., Penicillin allergy, Pacemaker"></div>
+                    <div class="input-group"><label>Dental Notes</label><textarea id="pat-notes" rows="3" placeholder="Optional clinical notes…"></textarea></div>
+                    <div class="input-group"><label>Upload Document / X-Ray <span class="hint">(optional)</span></label><input type="file" id="pat-file"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modal-patient')">Cancel</button>
+                <button class="btn btn-primary" id="save-patient-btn" onclick="savePatient()">Save Patient</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Appointment Modal -->
+    <div id="modal-appointment" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header"><h3><i class="ph ph-calendar-plus"></i> Book Appointment</h3><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-appointment')"><i class="ph ph-x"></i></button></div>
+            <div class="modal-body">
+                <form id="form-appointment">
+                    <div class="input-group">
+                        <label>Select Patient</label>
+                        <select id="apt-patient" required><option value="">Select patient…</option></select>
+                    </div>
+                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
+                        <div class="input-group"><label>Date</label><input type="date" id="apt-date" required></div>
+                        <div class="input-group"><label>Time</label><input type="time" id="apt-time" required></div>
+                    </div>
+                    <div class="input-group"><label>Treatment / Reason</label><input type="text" id="apt-reason" required placeholder="E.g., Routine cleaning"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modal-appointment')">Cancel</button>
+                <button class="btn btn-primary" id="save-apt-btn" onclick="saveAppointment()"><i class="ph ph-whatsapp-logo"></i> Book & Notify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Treatment/Payment Modal -->
+    <div id="modal-treatment" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header"><h3><i class="ph ph-first-aid-kit"></i> Log Treatment & Payment</h3><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-treatment')"><i class="ph ph-x"></i></button></div>
+            <div class="modal-body">
+                <form id="form-treatment">
+                    <input type="hidden" id="trt-patient-id">
+                    <input type="hidden" id="trt-apt-id">
+                    <div class="input-group"><label>Treatment Done</label><input type="text" id="trt-desc" required></div>
+                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
+                        <div class="input-group"><label>Total Fee ($)</label><input type="number" min="0" step="0.01" id="trt-fee" required oninput="calcBalance()"></div>
+                        <div class="input-group"><label>Amount Paid Now ($)</label><input type="number" min="0" step="0.01" id="trt-paid" required oninput="calcBalance()"></div>
+                    </div>
+                    <div class="input-group"><label>Outstanding Balance</label><input type="text" id="trt-balance" readonly></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modal-treatment')">Cancel</button>
+                <button class="btn btn-primary" id="save-trt-btn" onclick="saveTreatment()">Save Treatment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Profile Modal -->
+    <div id="modal-profile" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 560px;">
+            <div class="modal-header"><h3><i class="ph ph-identification-badge"></i> Patient Profile</h3><button class="btn btn-ghost btn-icon" onclick="closeModal('modal-profile')"><i class="ph ph-x"></i></button></div>
+            <div class="modal-body" id="profile-body">
+                <!-- Populated via JS -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modal-profile')">Close</button>
+                <button class="btn btn-primary" id="profile-book-btn"><i class="ph ph-calendar-plus"></i> Book Appointment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUPABASE & APP LOGIC -->
+    <script>
+        // --- Configuration ---
+        // REPLACE WITH YOUR SUPABASE URL AND ANON KEY
+        const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+
+        let supabase = null;
+        const credentialsConfigured = !SUPABASE_URL.includes('YOUR_PROJECT_ID') && !SUPABASE_ANON_KEY.includes('YOUR_ANON_KEY');
+
+        if (credentialsConfigured && window.supabase && typeof window.supabase.createClient === 'function') {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } catch (e) {
+                console.warn('Supabase client could not be created. Falling back to local storage.', e);
+                supabase = null;
+            }
+        } else {
+            console.info('Supabase not configured or unreachable — running in local-storage-only mode.');
+        }
+
+        // Simple password gate — change this to your clinic's password.
+        // Note: this is a client-side lock for convenience, not real security.
+        // Anyone with access to the page source can read this value.
+        const CLINIC_PASSWORD = '2026';
+        const AUTH_STORAGE_KEY = 'lumiere_authed';
+
+        // --- Safe storage wrapper ---
+        // Some environments (sandboxed preview iframes, private browsing, file:// restrictions)
+        // block localStorage entirely and throw a SecurityError on access. This wrapper falls
+        // back to an in-memory store so the app (including login) never breaks because of it.
+        const memoryStore = {};
+        let storageBlocked = false;
+        const safeStorage = {
+            getItem(key) {
+                try { return localStorage.getItem(key); }
+                catch (e) { storageBlocked = true; return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null; }
+            },
+            setItem(key, value) {
+                try { localStorage.setItem(key, value); }
+                catch (e) { storageBlocked = true; memoryStore[key] = value; }
+            },
+            removeItem(key) {
+                try { localStorage.removeItem(key); }
+                catch (e) { storageBlocked = true; delete memoryStore[key]; }
+            }
+        };
+
+        // --- Local storage fallback data layer ---
+        // Used automatically whenever Supabase is unreachable (offline, blocked CDN, bad config, etc.)
+        // so the clinic can keep working; data syncs are not merged automatically once Supabase comes back.
+        const LOCAL_KEYS = { patients: 'lumiere_local_patients', appointments: 'lumiere_local_appointments', treatments: 'lumiere_local_treatments' };
+        let offlineMode = false;
+
+        // State
+        let patients = [];
+        let appointments = [];
+        let treatments = [];
+
+        function localGet(key) {
+            try { return JSON.parse(safeStorage.getItem(key)) || []; } catch (e) { return []; }
+        }
+        function localSet(key, arr) {
+            try { safeStorage.setItem(key, JSON.stringify(arr)); } catch (e) { console.error('Local storage write failed', e); }
+        }
+        function uuid() {
+            return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        }
+        function markOffline(reason) {
+            if (!offlineMode) {
+                offlineMode = true;
+                toast('Working offline — changes are saved to this device only', 'error');
+                console.warn('Falling back to local storage:', reason);
+                const badge = document.getElementById('offline-badge');
+                if (badge) badge.classList.remove('hidden');
+            }
+        }
+
+        // --- Toasts ---
+        function toast(message, type = '') {
+            const wrap = document.getElementById('toast-wrap');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            const icon = type === 'error' ? 'ph-x-circle' : type === 'success' ? 'ph-check-circle' : 'ph-info';
+            el.innerHTML = `<i class="ph ${icon}"></i><span>${message}</span>`;
+            wrap.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.25s'; setTimeout(() => el.remove(), 250); }, 3200);
+        }
+
+        function setBtnLoading(btn, loading, labelIdle) {
+            if (!btn) return;
+            btn.disabled = loading;
+            btn.innerHTML = loading ? `<span class="spinner"></span> Saving…` : labelIdle;
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const dateEl = document.getElementById('dash-date');
+            if (dateEl) dateEl.innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('apt-date').min = new Date().toISOString().split('T')[0];
+
+            if (safeStorage.getItem(AUTH_STORAGE_KEY) === 'true') {
+                showApp();
+                initApp();
+            } else {
+                document.getElementById('auth-view').classList.remove('hidden');
+                document.getElementById('app-view').classList.add('hidden');
+            }
+
+            // Close modal on overlay click / Escape
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => closeModal(m.id));
+            });
+        });
+
+        // --- Authentication ---
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('auth-password').value;
+            const btn = document.getElementById('login-btn');
+            const errorEl = document.getElementById('auth-error');
+            errorEl.innerText = '';
+
+            if (password === CLINIC_PASSWORD) {
+                safeStorage.setItem(AUTH_STORAGE_KEY, 'true');
+                document.getElementById('auth-password').value = '';
+                showApp();
+                initApp();
+            } else {
+                errorEl.innerText = 'Incorrect password. Please try again.';
+                setBtnLoading(btn, false, 'Unlock Dashboard');
+            }
+        });
+
+        function logout() {
+            safeStorage.removeItem(AUTH_STORAGE_KEY);
+            window.location.reload();
+        }
+
+        function showApp() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+        }
+
+        // --- Mobile sidebar ---
+        function toggleSidebar(open) {
+            document.getElementById('sidebar').classList.toggle('open', open);
+            document.getElementById('sidebar-overlay').classList.toggle('open', open);
+        }
+
+        // --- Navigation ---
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                switchView(e.currentTarget.dataset.target);
+                toggleSidebar(false);
+            });
+        });
+
+        function switchView(viewId) {
+            ['dashboard', 'patients', 'appointments', 'billing'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.target === viewId));
+            if (viewId === 'dashboard') loadDashboardData();
+            if (viewId === 'patients') renderPatients();
+            if (viewId === 'appointments') renderAppointments();
+            if (viewId === 'billing') renderBilling();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function openAppointmentModal(patientId) {
+            document.getElementById('form-appointment').reset();
+            document.getElementById('apt-date').min = new Date().toISOString().split('T')[0];
+            if (patientId) document.getElementById('apt-patient').value = patientId;
+            openModal('modal-appointment');
+        }
+
+        // --- Data Loading & Core Logic ---
+        async function initApp() {
+            await Promise.all([fetchPatients(), fetchAppointments(), fetchTreatments()]);
+            populatePatientDropdowns();
+            loadDashboardData();
+        }
+
+        async function fetchPatients() {
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase.from('patients').select('*').order('created_at', { ascending: false });
+                    if (error) throw error;
+                    patients = data || [];
+                    renderPatients();
+                    return;
+                } catch (e) {
+                    markOffline(e);
+                }
+            }
+            patients = localGet(LOCAL_KEYS.patients).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            renderPatients();
+        }
+
+        async function fetchAppointments() {
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase.from('appointments').select('*, patients(name, phone)').order('date', { ascending: true }).order('time', { ascending: true });
+                    if (error) throw error;
+                    appointments = data || [];
+                    return;
+                } catch (e) {
+                    markOffline(e);
+                }
+            }
+            const local = localGet(LOCAL_KEYS.appointments);
+            appointments = local
+                .map(a => ({ ...a, patients: patients.find(p => p.id === a.patient_id) ? { name: patients.find(p => p.id === a.patient_id).name, phone: patients.find(p => p.id === a.patient_id).phone } : null }))
+                .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+        }
+
+        async function fetchTreatments() {
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase.from('treatments').select('*, patients(name)').order('created_at', { ascending: false });
+                    if (error) throw error;
+                    treatments = data || [];
+                    renderBilling();
+                    return;
+                } catch (e) {
+                    markOffline(e);
+                }
+            }
+            const local = localGet(LOCAL_KEYS.treatments);
+            treatments = local
+                .map(t => ({ ...t, patients: patients.find(p => p.id === t.patient_id) ? { name: patients.find(p => p.id === t.patient_id).name } : null }))
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            renderBilling();
+        }
+
+        function initials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(/\s+/);
+            return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || name[0].toUpperCase();
+        }
+
+        function patientBalance(patientId) {
+            return treatments.filter(t => t.patient_id === patientId).reduce((acc, t) => acc + (Number(t.fee) - Number(t.paid_amount)), 0);
+        }
+
+        // --- Dashboard Calculations ---
+        function loadDashboardData() {
+            const today = new Date().toISOString().split('T')[0];
+
+            const todaysAppts = appointments.filter(a => a.date === today);
+            document.getElementById('stat-appointments').innerText = todaysAppts.length;
+            document.getElementById('stat-patients').innerText = patients.length;
+
+            let earningsToday = 0;
+            let totalUnpaid = 0;
+
+            treatments.forEach(t => {
+                if ((t.created_at || '').startsWith(today)) earningsToday += Number(t.paid_amount) || 0;
+                totalUnpaid += (Number(t.fee) || 0) - (Number(t.paid_amount) || 0);
+            });
+
+            document.getElementById('stat-earnings').innerText = `$${earningsToday.toFixed(2)}`;
+            document.getElementById('stat-unpaid').innerText = `$${totalUnpaid.toFixed(2)}`;
+
+            // Render Queue
+            const tbody = document.getElementById('queue-table-body');
+            tbody.innerHTML = '';
+            if (todaysAppts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="ph ph-calendar-blank"></i><p>No appointments scheduled for today.</p></div></td></tr>`;
+                return;
+            }
+            todaysAppts.forEach((a, index) => {
+                let badge = a.status === 'Completed' ? 'success' : a.status === 'Cancelled' ? 'danger' : 'warning';
+                const name = a.patients?.name || 'Unknown patient';
+                tbody.innerHTML += `
+                    <tr>
+                        <td data-label="Token"><span class="token">${String(index + 1).padStart(2, '0')}</span></td>
+                        <td data-label="Patient"><div class="flex items-center gap-2"><span class="avatar">${initials(name)}</span><strong>${name}</strong></div></td>
+                        <td data-label="Time">${formatTime(a.time)}</td>
+                        <td data-label="Treatment" class="cell-muted">${a.treatment || '—'}</td>
+                        <td data-label="Status"><span class="badge badge-${badge}">${a.status}</span></td>
+                        <td data-label="">
+                            ${a.status !== 'Completed' && a.status !== 'Cancelled' ? `<button class="btn btn-outline btn-sm" onclick="openTreatmentModal('${a.patient_id}', '${a.id}', ${JSON.stringify(a.treatment || '').replace(/"/g, '&quot;')})"><i class="ph ph-check"></i> Complete</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function formatTime(t) {
+            if (!t) return '—';
+            const [h, m] = t.split(':');
+            const hour = parseInt(h, 10);
+            const suffix = hour >= 12 ? 'PM' : 'AM';
+            const hr12 = ((hour + 11) % 12) + 1;
+            return `${hr12}:${m} ${suffix}`;
+        }
+
+        // --- Patients CRUD ---
+        function renderPatients(filter = '') {
+            const tbody = document.getElementById('patients-table-body');
+            const countEl = document.getElementById('patients-count');
+            const f = filter.toLowerCase();
+            const filtered = patients.filter(p => (p.name || '').toLowerCase().includes(f) || (p.phone || '').includes(filter));
+            if (countEl) countEl.innerText = `${patients.length} patient${patients.length === 1 ? '' : 's'} registered`;
+
+            tbody.innerHTML = '';
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="ph ph-users"></i><p>${patients.length === 0 ? 'No patients yet. Add your first patient to get started.' : 'No patients match your search.'}</p></div></td></tr>`;
+                return;
+            }
+            filtered.forEach(p => {
+                const pBalance = patientBalance(p.id);
+                tbody.innerHTML += `
+                    <tr onclick="viewPatient('${p.id}')" style="cursor:pointer">
+                        <td data-label="Patient"><div class="flex items-center gap-2"><span class="avatar">${initials(p.name)}</span><div><strong>${p.name}</strong><div class="text-faint">${p.dob ? new Date(p.dob).toLocaleDateString() : 'DOB not set'}</div></div></div></td>
+                        <td data-label="Phone">${p.phone ? `<a href="tel:${p.phone}" onclick="event.stopPropagation()" style="color:var(--text-main); text-decoration:none">${p.phone}</a>` : '<span class="text-faint">—</span>'}</td>
+                        <td data-label="Alerts">${p.alerts ? `<span class="badge badge-danger"><i class="ph ph-warning"></i> ${p.alerts}</span>` : '<span class="text-faint">None</span>'}</td>
+                        <td data-label="Balance" style="color:${pBalance > 0 ? 'var(--danger)' : 'var(--success)'}; font-weight:600">$${pBalance.toFixed(2)}</td>
+                        <td data-label="">
+                            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); viewPatient('${p.id}')"><i class="ph ph-eye"></i> View</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function searchPatients() {
+            renderPatients(document.getElementById('search-patient').value);
+        }
+
+        async function savePatient() {
+            const name = document.getElementById('pat-name').value.trim();
+            if (!name) { toast('Patient name is required', 'error'); return; }
+
+            const btn = document.getElementById('save-patient-btn');
+            setBtnLoading(btn, true, 'Save Patient');
+
+            const fileInput = document.getElementById('pat-file');
+            let fileUrl = null;
+
+            try {
+                const payload = {
+                    name,
+                    dob: document.getElementById('pat-dob').value || null,
+                    phone: document.getElementById('pat-phone').value.trim() || null,
+                    alerts: document.getElementById('pat-alerts').value.trim(),
+                    notes: document.getElementById('pat-notes').value.trim(),
+                    file_url: null
+                };
+
+                let saved = false;
+                if (supabase) {
+                    try {
+                        if (fileInput.files.length > 0) {
+                            const file = fileInput.files[0];
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `${uuid()}.${fileExt}`;
+                            const { data, error: uploadError } = await supabase.storage.from('xrays').upload(fileName, file);
+                            if (uploadError) toast('File upload failed, saving patient without it', 'error');
+                            else fileUrl = data.path;
+                        }
+                        const { error } = await supabase.from('patients').insert([{ ...payload, file_url: fileUrl }]);
+                        if (error) throw error;
+                        saved = true;
+                    } catch (e) {
+                        markOffline(e);
+                    }
+                }
+
+                if (!saved) {
+                    if (fileInput.files.length > 0) toast('File attachments aren\u2019t saved while offline', 'error');
+                    const record = { ...payload, id: uuid(), created_at: new Date().toISOString() };
+                    const local = localGet(LOCAL_KEYS.patients);
+                    local.push(record);
+                    localSet(LOCAL_KEYS.patients, local);
+                }
+
+                closeModal('modal-patient');
+                document.getElementById('form-patient').reset();
+                await fetchPatients();
+                populatePatientDropdowns();
+                toast('Patient saved successfully', 'success');
+            } catch (err) {
+                console.error(err);
+                toast('Error saving patient', 'error');
+            } finally {
+                setBtnLoading(btn, false, 'Save Patient');
+            }
+        }
+
+        function populatePatientDropdowns() {
+            const select = document.getElementById('apt-patient');
+            const current = select.value;
+            select.innerHTML = '<option value="">Select patient…</option>';
+            patients.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.name}${p.phone ? ' — ' + p.phone : ''}</option>`; });
+            if (current) select.value = current;
+        }
+
+        // --- Patient Profile ---
+        function viewPatient(id) {
+            const p = patients.find(x => x.id === id);
+            if (!p) return;
+            const bal = patientBalance(id);
+            const history = treatments.filter(t => t.patient_id === id);
+            const upcoming = appointments.filter(a => a.patient_id === id && a.status !== 'Cancelled');
+
+            const body = document.getElementById('profile-body');
+            body.innerHTML = `
+                <div class="profile-header">
+                    <span class="avatar avatar-lg">${initials(p.name)}</span>
+                    <div>
+                        <h3 style="font-size:1.15rem">${p.name}</h3>
+                        <p class="text-muted">${p.phone ? `<a href="tel:${p.phone}" style="color:inherit">${p.phone}</a>` : 'No phone on file'}</p>
+                    </div>
+                </div>
+                <div class="profile-stat-row">
+                    <div class="profile-mini"><div class="text-faint">Date of Birth</div><div class="val">${p.dob ? new Date(p.dob).toLocaleDateString() : 'Not set'}</div></div>
+                    <div class="profile-mini"><div class="text-faint">Outstanding Balance</div><div class="val" style="color:${bal > 0 ? 'var(--danger)' : 'var(--success)'}">$${bal.toFixed(2)}</div></div>
+                </div>
+                ${p.alerts ? `<div class="badge badge-danger" style="margin-bottom:0.75rem"><i class="ph ph-warning"></i> ${p.alerts}</div>` : ''}
+                ${p.notes ? `<div class="section-label">Dental Notes</div><p style="font-size:0.86rem; color:var(--text-main)">${p.notes}</p>` : ''}
+
+                <div class="section-label">Upcoming Appointments</div>
+                ${upcoming.length ? upcoming.map(a => `
+                    <div class="history-item">
+                        <div><strong style="font-size:0.85rem">${a.treatment || 'Appointment'}</strong><div class="text-faint">${a.date} · ${formatTime(a.time)}</div></div>
+                        <span class="badge badge-${a.status === 'Completed' ? 'success' : 'warning'}">${a.status}</span>
+                    </div>
+                `).join('') : `<p class="text-faint" style="font-size:0.82rem">No upcoming appointments.</p>`}
+
+                <div class="section-label">Treatment History</div>
+                ${history.length ? history.map(t => `
+                    <div class="history-item">
+                        <div><strong style="font-size:0.85rem">${t.description}</strong><div class="text-faint">${new Date(t.created_at).toLocaleDateString()}</div></div>
+                        <div style="text-align:right"><div style="font-weight:600; font-size:0.85rem">$${Number(t.fee).toFixed(2)}</div><span class="badge badge-${Number(t.fee) <= Number(t.paid_amount) ? 'success' : 'danger'}">${Number(t.fee) <= Number(t.paid_amount) ? 'Paid' : 'Unpaid'}</span></div>
+                    </div>
+                `).join('') : `<p class="text-faint" style="font-size:0.82rem">No treatment history yet.</p>`}
+            `;
+            document.getElementById('profile-book-btn').onclick = () => { closeModal('modal-profile'); openAppointmentModal(id); };
+            openModal('modal-profile');
+        }
+
+        // --- Appointments CRUD & WhatsApp via Edge Function ---
+        function renderAppointments() {
+            const tbody = document.getElementById('all-appointments-body');
+            tbody.innerHTML = '';
+            if (appointments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="ph ph-calendar-blank"></i><p>No appointments booked yet.</p></div></td></tr>`;
+                return;
+            }
+            appointments.forEach(a => {
+                let badge = a.status === 'Completed' ? 'success' : a.status === 'Cancelled' ? 'danger' : 'warning';
+                tbody.innerHTML += `
+                    <tr>
+                        <td data-label="Date">${a.date}</td>
+                        <td data-label="Time">${formatTime(a.time)}</td>
+                        <td data-label="Patient"><strong>${a.patients?.name || 'Unknown'}</strong></td>
+                        <td data-label="Treatment" class="cell-muted">${a.treatment || '—'}</td>
+                        <td data-label="Status"><span class="badge badge-${badge}">${a.status}</span></td>
+                        <td data-label="">
+                            ${a.status === 'Booked' ? `<button class="btn btn-danger-text btn-sm" onclick="cancelAppointment('${a.id}')"><i class="ph ph-x"></i> Cancel</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveAppointment() {
+            const patient_id = document.getElementById('apt-patient').value;
+            const date = document.getElementById('apt-date').value;
+            const time = document.getElementById('apt-time').value;
+            const treatment = document.getElementById('apt-reason').value.trim();
+
+            if (!patient_id || !date || !time || !treatment) { toast('Please fill in all fields', 'error'); return; }
+
+            const btn = document.getElementById('save-apt-btn');
+            setBtnLoading(btn, true, '<i class="ph ph-whatsapp-logo"></i> Book & Notify');
+
+            try {
+                const payload = { patient_id, date, time, treatment, status: 'Booked' };
+                let saved = false;
+
+                if (supabase) {
+                    try {
+                        const { error } = await supabase.from('appointments').insert([payload]).select();
+                        if (error) throw error;
+                        saved = true;
+
+                        const patient = patients.find(p => p.id === patient_id);
+                        if (patient && patient.phone) {
+                            supabase.functions.invoke('whatsapp-notify', {
+                                body: { phone: patient.phone, message: `Your dental appointment is confirmed for ${date} at ${time}.` }
+                            }).catch(err => console.warn('WhatsApp notify failed', err));
+                        }
+                    } catch (e) {
+                        markOffline(e);
+                    }
+                }
+
+                if (!saved) {
+                    const record = { ...payload, id: uuid(), created_at: new Date().toISOString() };
+                    const local = localGet(LOCAL_KEYS.appointments);
+                    local.push(record);
+                    localSet(LOCAL_KEYS.appointments, local);
+                }
+
+                closeModal('modal-appointment');
+                document.getElementById('form-appointment').reset();
+                await fetchAppointments();
+                loadDashboardData();
+                renderAppointments();
+                toast('Appointment booked', 'success');
+            } catch (err) {
+                console.error(err);
+                toast('Error booking appointment', 'error');
+            } finally {
+                setBtnLoading(btn, false, '<i class="ph ph-whatsapp-logo"></i> Book & Notify');
+            }
+        }
+
+        async function cancelAppointment(id) {
+            if (!confirm('Cancel this appointment? This cannot be undone.')) return;
+            await updateApptStatus(id, 'Cancelled');
+            toast('Appointment cancelled');
+        }
+
+        async function updateApptStatus(id, status) {
+            let saved = false;
+            if (supabase) {
+                try {
+                    const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
+                    if (error) throw error;
+                    saved = true;
+                } catch (e) {
+                    markOffline(e);
+                }
+            }
+            if (!saved) {
+                const local = localGet(LOCAL_KEYS.appointments);
+                const idx = local.findIndex(a => a.id === id);
+                if (idx > -1) { local[idx].status = status; localSet(LOCAL_KEYS.appointments, local); }
+            }
+            await fetchAppointments();
+            loadDashboardData();
+            renderAppointments();
+        }
+
+        // --- Treatments & Billing ---
+        function renderBilling() {
+            const tbody = document.getElementById('billing-table-body');
+            const summaryEl = document.getElementById('billing-summary');
+            tbody.innerHTML = '';
+
+            if (summaryEl) {
+                const totalUnpaid = treatments.reduce((acc, t) => acc + (Number(t.fee) - Number(t.paid_amount)), 0);
+                summaryEl.innerText = `${treatments.length} treatment record${treatments.length === 1 ? '' : 's'} · $${totalUnpaid.toFixed(2)} outstanding`;
+            }
+
+            if (treatments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="ph ph-receipt"></i><p>No treatments logged yet.</p></div></td></tr>`;
+                return;
+            }
+            treatments.forEach(t => {
+                const isPaid = Number(t.fee) <= Number(t.paid_amount);
+                tbody.innerHTML += `
+                    <tr>
+                        <td data-label="Date">${new Date(t.created_at).toLocaleDateString()}</td>
+                        <td data-label="Patient"><strong>${t.patients?.name || 'Unknown'}</strong></td>
+                        <td data-label="Treatment" class="cell-muted">${t.description}</td>
+                        <td data-label="Fee">$${Number(t.fee).toFixed(2)}</td>
+                        <td data-label="Paid">$${Number(t.paid_amount).toFixed(2)}</td>
+                        <td data-label="Status"><span class="badge badge-${isPaid ? 'success' : 'danger'}">${isPaid ? 'Paid' : 'Unpaid'}</span></td>
+                        <td data-label="">
+                           ${!isPaid ? `<button class="btn btn-outline btn-sm" onclick="toast('Payment gateway integration required')"><i class="ph ph-credit-card"></i> Pay</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openTreatmentModal(patientId, aptId, treatmentDesc) {
+            document.getElementById('trt-patient-id').value = patientId;
+            document.getElementById('trt-apt-id').value = aptId;
+            document.getElementById('trt-desc').value = treatmentDesc || '';
+            document.getElementById('trt-fee').value = '';
+            document.getElementById('trt-paid').value = '';
+            document.getElementById('trt-balance').value = '$0.00';
+            openModal('modal-treatment');
+        }
+
+        function calcBalance() {
+            const fee = Number(document.getElementById('trt-fee').value) || 0;
+            const paid = Number(document.getElementById('trt-paid').value) || 0;
+            document.getElementById('trt-balance').value = `$${(fee - paid).toFixed(2)}`;
+        }
+
+        async function saveTreatment() {
+            const desc = document.getElementById('trt-desc').value.trim();
+            const fee = Number(document.getElementById('trt-fee').value);
+            const paid = Number(document.getElementById('trt-paid').value);
+            if (!desc || isNaN(fee)) { toast('Please complete the treatment details', 'error'); return; }
+
+            const btn = document.getElementById('save-trt-btn');
+            setBtnLoading(btn, true, 'Save Treatment');
+
+            try {
+                const payload = {
+                    patient_id: document.getElementById('trt-patient-id').value,
+                    appointment_id: document.getElementById('trt-apt-id').value,
+                    description: desc,
+                    fee: fee,
+                    paid_amount: isNaN(paid) ? 0 : paid,
+                    status: (fee - (isNaN(paid) ? 0 : paid)) <= 0 ? 'Paid' : 'Partial'
+                };
+
+                let saved = false;
+                if (supabase) {
+                    try {
+                        const { error } = await supabase.from('treatments').insert([payload]);
+                        if (error) throw error;
+                        saved = true;
+                    } catch (e) {
+                        markOffline(e);
+                    }
+                }
+
+                if (!saved) {
+                    const record = { ...payload, id: uuid(), created_at: new Date().toISOString() };
+                    const local = localGet(LOCAL_KEYS.treatments);
+                    local.push(record);
+                    localSet(LOCAL_KEYS.treatments, local);
+                }
+
+                await updateApptStatus(payload.appointment_id, 'Completed');
+                closeModal('modal-treatment');
+                await fetchTreatments();
+                loadDashboardData();
+                toast('Treatment logged', 'success');
+            } catch (err) {
+                console.error(err);
+                toast('Error saving treatment', 'error');
+            } finally {
+                setBtnLoading(btn, false, 'Save Treatment');
+            }
+        }
+    </script>
+</body>
+</html>
